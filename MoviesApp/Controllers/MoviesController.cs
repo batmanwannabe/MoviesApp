@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApp.Models;
@@ -54,10 +56,10 @@ namespace MoviesApp.Controllers
 
         [HttpPost("[action]")]
         public StatusCodeResult AddNewMovie([FromBody]MoviesModel movie)
-        {
+        {          
+            
             if (_moviesRepository.AddNewMovie(movie))
                 return new StatusCodeResult(200);
-
             return new StatusCodeResult(400);
         }
 
@@ -68,6 +70,37 @@ namespace MoviesApp.Controllers
                 return new StatusCodeResult(200);
 
             return new StatusCodeResult(400);
+        }
+
+        [HttpPost("[action]"), DisableRequestSizeLimit]
+        public string UploadFile()
+        {
+            string fullPath = "";
+            try
+            {
+                var file = Request.Form.Files[0];
+                string folderName = "Upload";
+                string webRootPath = "C:\\Users\\xsperiasamy\\source\\repos\\MoviesApp\\MoviesApp\\ClientApp\\src\\assets";
+                string newPath = Path.Combine(webRootPath, folderName);
+                if (!Directory.Exists(newPath))
+                {
+                    Directory.CreateDirectory(newPath);
+                }
+                if (file.Length > 0)
+                {
+                    string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
+                    fullPath = Path.Combine(newPath, fileName);
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        file.CopyTo(stream);
+                    }
+                }
+                return fullPath;
+            }
+            catch (System.Exception ex)
+            {
+                return "Upload Failed: ";
+            }
         }
     }
 }
